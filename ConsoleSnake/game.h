@@ -5,6 +5,10 @@
 #include <time.h>
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SCREEN_WIDTH 101
 #define SCREEN_HEIGHT 61
 #define GAME_WIDTH 23
@@ -37,5 +41,9 @@ extern void change_snake_direction(SNAKE* snake, CHAR input);
 extern BOOL update_food(COORD* food, COORD size, SNAKE* snake);
 extern BOOL draw_food(CHAR_INFO* buffer, COORD size, COORD pos, CHAR_INFO style);
 extern void start_game();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

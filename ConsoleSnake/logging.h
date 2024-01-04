@@ -11,6 +11,6 @@
 #define LOG_ERROR_AND_TERMINATE(message) log_error_and_terminate(__LINE__, __FUNCTION__, __FILE__, message);
 
 extern void log_error(int line, const char* function, const char* file, const char* message);
-extern _Noreturn void log_error_and_terminate(int line, const char* function, const char* file, const char* message);
+extern void log_error_and_terminate(int line, const char* function, const char* file, const char* message);
 
 #endif

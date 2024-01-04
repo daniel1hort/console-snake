@@ -14,6 +14,22 @@ CHAR_INFO DEFAULT_STYLE = {
 	.Attributes = BACKGROUND_GREEN,
 	.Char.AsciiChar = ' ',
 };
+CHAR_INFO SPRITE_STYLE = {
+	.Attributes = BACKGROUND_RED | BACKGROUND_GREEN,
+	.Char.AsciiChar = ' ',
+};
+CHAR_INFO EMPTY_STYLE = { 0 };
+
+SPRITE sprite_digit_0 = {
+	.size = {.X = 5, .Y = 7},
+	.data = " ### "
+			"#   #"
+			"#   #"
+			"# # #"
+			"#   #"
+			"#   #"
+			" ### "
+};
 
 void init_snake(SNAKE* snake) {
 	snake->segments[0] = coord(5, 5);
@@ -28,11 +44,10 @@ void init_snake(SNAKE* snake) {
 
 void update_snake(SNAKE* snake, COORD size, COORD food) {
 	COORD new_head;
-	INT16 size_to_check = snake->size - (snake->has_eaten ? 0 : 1);
 	new_head.X = (snake->segments[0].X + snake->direction.X + size.X) % size.X;
 	new_head.Y = (snake->segments[0].Y + snake->direction.Y + size.Y) % size.Y;
 
-	for (int i = 0; i < size_to_check; i++)
+	for (int i = 0; i < snake->size - 1; i++)
 		if (new_head.X == snake->segments[i].X && new_head.Y == snake->segments[i].Y)
 		{
 			snake->is_alive = FALSE;
@@ -60,7 +75,7 @@ BOOL draw_snake(CHAR_INFO* buffer, COORD size, SNAKE* snake, CHAR_INFO style) {
 	}
 	if (minx < 0 || miny < 0 || maxx >= size.X || maxy >= size.Y)
 		return FALSE;
-
+	
 	for (int i = 0; i < snake->size; i++) {
 		draw_rect(buffer, size, rect(
 			5 + 4 * snake->segments[i].X,
@@ -69,25 +84,36 @@ BOOL draw_snake(CHAR_INFO* buffer, COORD size, SNAKE* snake, CHAR_INFO style) {
 			7 + 4 * snake->segments[i].Y
 		), style);
 	}
+
+	COORD head = snake->segments[0];
+	if (snake->direction.Y == 0) {
+		set_pixel(buffer, size, coord(6 + snake->direction.X + 4 * head.X, 5 + 4 * head.Y), EMPTY_STYLE);
+		set_pixel(buffer, size, coord(6 + snake->direction.X + 4 * head.X, 7 + 4 * head.Y), EMPTY_STYLE);
+	}
+	else {
+		set_pixel(buffer, size, coord(5 + 4 * head.X, 6 + snake->direction.Y + 4 * head.Y), EMPTY_STYLE);
+		set_pixel(buffer, size, coord(7 + 4 * head.X, 6 + snake->direction.Y + 4 * head.Y), EMPTY_STYLE);
+	}
+
 	return TRUE;
 }
 
 void change_snake_direction(SNAKE* snake, CHAR input) {
 	if ((input == 'a' || input == 'A') &&
-		snake->direction.X != DIRECTION_RIGHT.X &&
-		snake->direction.Y != DIRECTION_RIGHT.Y)
+		(snake->direction.X != DIRECTION_RIGHT.X ||
+		snake->direction.Y != DIRECTION_RIGHT.Y))
 		snake->direction = DIRECTION_LEFT;
 	if ((input == 'w' || input == 'W') &&
-		snake->direction.X != DIRECTION_DOWN.X &&
-		snake->direction.Y != DIRECTION_DOWN.Y)
+		(snake->direction.X != DIRECTION_DOWN.X ||
+		snake->direction.Y != DIRECTION_DOWN.Y))
 		snake->direction = DIRECTION_UP;
 	if ((input == 'd' || input == 'D') &&
-		snake->direction.X != DIRECTION_LEFT.X &&
-		snake->direction.Y != DIRECTION_LEFT.Y)
+		(snake->direction.X != DIRECTION_LEFT.X ||
+		snake->direction.Y != DIRECTION_LEFT.Y))
 		snake->direction = DIRECTION_RIGHT;
 	if ((input == 's' || input == 'S') &&
-		snake->direction.X != DIRECTION_UP.X &&
-		snake->direction.Y != DIRECTION_UP.Y)
+		(snake->direction.X != DIRECTION_UP.X ||
+		snake->direction.Y != DIRECTION_UP.Y))
 		snake->direction = DIRECTION_DOWN;
 }
 
@@ -123,7 +149,7 @@ BOOL draw_food(CHAR_INFO* buffer, COORD size, COORD pos, CHAR_INFO style) {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			if ((i + j) % 2 == 1) {
-				draw_rect(buffer, size, rect(
+				fill_rect(buffer, size, rect(
 					corner.X + i,
 					corner.Y + j,
 					corner.X + i,
@@ -151,6 +177,8 @@ void start_game() {
 	rng();
 	update_food(&food, GAME_SIZE, &snake);
 
+	int x = 8;
+
 	while (input != 0x1B && snake.is_alive) {
 		ReadInput(hStdin, &input);
 		change_snake_direction(&snake, input);
@@ -161,6 +189,7 @@ void start_game() {
 				score++;
 				update_food(&food, GAME_SIZE, &snake);
 			}
+			x++;
 		}
 
 		memset(SCREEN_BUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(CHAR_INFO));
@@ -168,6 +197,7 @@ void start_game() {
 		draw_rect(SCREEN_BUFFER, SCREEN_SIZE, rect(3, 3, SCREEN_WIDTH - 4, SCREEN_HEIGHT - 4), DEFAULT_STYLE);
 		draw_food(SCREEN_BUFFER, SCREEN_SIZE, food, DEFAULT_STYLE);
 		draw_snake(SCREEN_BUFFER, SCREEN_SIZE, &snake, DEFAULT_STYLE);
+		draw_sprite(SCREEN_BUFFER, SCREEN_SIZE, coord(x, 8), SPRITE_STYLE, &sprite_digit_0);
 		WriteConsoleOutputW(hStdout, SCREEN_BUFFER, SCREEN_SIZE, COORD_ORIGIN, &SCREEN_RECT);
 		sprintf_s(buff, 256, "Score: %05d", score);
 		SetConsoleTitleA(buff);

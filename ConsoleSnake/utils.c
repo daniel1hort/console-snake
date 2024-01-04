@@ -16,8 +16,21 @@ void set_coord(PCOORD pcoord, SHORT x, SHORT y) {
 	pcoord->Y = y;
 }
 
+BOOL rect_inside_boundaries(SMALL_RECT rect, COORD size) {
+	if (rect.Left < 0 || rect.Top < 0 || rect.Right >= size.X || rect.Bottom >= size.Y ||
+		rect.Left > rect.Right || rect.Top > rect.Bottom)
+		return FALSE;
+	return TRUE;
+}
+
+BOOL coord_inside_boundaries(COORD pos, COORD size) {
+	if (pos.X < 0 || pos.Y < 0 || pos.X >= size.X || pos.Y >= size.Y)
+		return FALSE;
+	return TRUE;
+}
+
 BOOL draw_rect(CHAR_INFO* buffer, COORD size, SMALL_RECT rect, CHAR_INFO style) {
-	if (rect.Left < 0 || rect.Top < 0 || rect.Right >= size.X || rect.Bottom >= size.Y)
+	if (!rect_inside_boundaries(rect, size))
 		return FALSE;
 
 	for (int i = rect.Left; i <= rect.Right; i++) {
@@ -37,8 +50,16 @@ BOOL draw_rect(CHAR_INFO* buffer, COORD size, SMALL_RECT rect, CHAR_INFO style) 
 	return TRUE;
 }
 
+BOOL set_pixel(CHAR_INFO* buffer, COORD size, COORD pos, CHAR_INFO style) {
+	if (!coord_inside_boundaries(pos, size))
+		return FALSE;
+
+	buffer[size.X * pos.Y + pos.X].Char.AsciiChar = style.Char.AsciiChar;
+	buffer[size.X * pos.Y + pos.X].Attributes = style.Attributes;
+}
+
 BOOL fill_rect(CHAR_INFO* buffer, COORD size, SMALL_RECT rect, CHAR_INFO style) {
-	if (rect.Left < 0 || rect.Top < 0 || rect.Right >= size.X || rect.Bottom >= size.Y)
+	if (!rect_inside_boundaries(rect, size))
 		return FALSE;
 
 	for (int i = rect.Top; i <= rect.Bottom; i++) {
@@ -49,6 +70,22 @@ BOOL fill_rect(CHAR_INFO* buffer, COORD size, SMALL_RECT rect, CHAR_INFO style) 
 	}
 
 	return TRUE;
+}
+
+extern BOOL draw_sprite(CHAR_INFO* buffer, COORD size, COORD pos, CHAR_INFO style, SPRITE* sprite) {
+	SMALL_RECT bounds = rect(pos.X, pos.Y, pos.X + sprite->size.X, pos.Y + sprite->size.Y);
+	if (!rect_inside_boundaries(bounds, size))
+		return FALSE;
+
+	for (int row = 0; row < sprite->size.Y; row++) {
+		for (int col = 0; col < sprite->size.X; col++) {
+			int index = row * sprite->size.X + col;
+			if (sprite->data[index] == '#') {
+				COORD pixel_pos = coord(pos.X + col, pos.Y + row);
+				set_pixel(buffer, size, pixel_pos, style);
+			}
+		}
+	}
 }
 
 void SetConsoleFont(HANDLE handle, SHORT x, SHORT y) {
